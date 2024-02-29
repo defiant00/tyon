@@ -1,4 +1,10 @@
 const std = @import("std");
+const Allocator = std.mem.Allocator;
+
+const Formatter = @import("Formatter.zig");
+const Parser = @import("parser.zig").Parser;
+const ToJson = @import("ToJson.zig");
+const Validator = @import("validator.zig").Validator;
 
 const tyon_version = std.SemanticVersion{ .major = 0, .minor = 5, .patch = 0 };
 const spec_version = std.SemanticVersion{ .major = 1, .minor = 0, .patch = 0, .pre = "rc.1" };
@@ -11,14 +17,113 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(alloc);
     defer std.process.argsFree(alloc, args);
 
-    if (args.len == 2 and std.ascii.eqlIgnoreCase(args[1], "help")) {
+    if (args.len >= 3 and std.ascii.eqlIgnoreCase(args[1], "debug")) {
+        for (args[2..]) |file| {
+            try fileDebug(alloc, file);
+        }
+    } else if (args.len >= 3 and std.ascii.eqlIgnoreCase(args[1], "format")) {
+        for (args[2..]) |file| {
+            try fileFormat(alloc, file);
+        }
+    } else if (args.len == 2 and std.ascii.eqlIgnoreCase(args[1], "help")) {
         printUsage();
+    } else if (args.len >= 3 and std.ascii.eqlIgnoreCase(args[1], "to-json")) {
+        for (args[2..]) |file| {
+            try fileToJson(alloc, file);
+        }
+    } else if (args.len >= 3 and std.ascii.eqlIgnoreCase(args[1], "validate")) {
+        for (args[2..]) |file| {
+            try fileValidate(alloc, file);
+        }
     } else if (args.len == 2 and std.ascii.eqlIgnoreCase(args[1], "version")) {
         std.debug.print("tyon {}\nspec {}\ndata {}\n", .{ tyon_version, spec_version, data_version });
     } else {
         printUsage();
         return error.InvalidCommand;
     }
+}
+
+fn fileDebug(alloc: Allocator, path: []const u8) !void {
+    std.debug.print("{s}\n", .{path});
+
+    var file = try std.fs.cwd().openFile(path, .{});
+    defer file.close();
+
+    const source = try file.readToEndAlloc(alloc, std.math.maxInt(usize));
+    defer alloc.free(source);
+
+    var parser = try Parser.init(alloc, source, true);
+    defer parser.deinit();
+
+    const result = try parser.parse();
+    result.print();
+}
+
+fn fileFormat(alloc: Allocator, path: []const u8) !void {
+    std.debug.print("{s}\n", .{path});
+
+    var file = try std.fs.cwd().openFile(path, .{});
+
+    const source = try file.readToEndAlloc(alloc, std.math.maxInt(usize));
+    defer alloc.free(source);
+
+    file.close();
+
+    var parser = try Parser.init(alloc, source, true);
+    defer parser.deinit();
+
+    const result = try parser.parse();
+
+    file = try std.fs.cwd().createFile(path, .{});
+    defer file.close();
+
+    var buffered_writer = std.io.bufferedWriter(file.writer());
+
+    try Formatter.format(result, buffered_writer.writer());
+    try buffered_writer.flush();
+}
+
+fn fileToJson(alloc: Allocator, path: []const u8) !void {
+    std.debug.print("{s}\n", .{path});
+
+    var file = try std.fs.cwd().openFile(path, .{});
+    defer file.close();
+
+    const source = try file.readToEndAlloc(alloc, std.math.maxInt(usize));
+    defer alloc.free(source);
+
+    const strings = [_][]const u8{ path, ".json" };
+    const out_path = try std.mem.concat(alloc, u8, &strings);
+    defer alloc.free(out_path);
+
+    var parser = try Parser.init(alloc, source, false);
+    defer parser.deinit();
+
+    const result = try parser.parse();
+
+    var out_file = try std.fs.cwd().createFile(out_path, .{});
+    defer out_file.close();
+
+    var buffered_writer = std.io.bufferedWriter(out_file.writer());
+
+    try ToJson.convert(alloc, buffered_writer.writer(), result.root);
+    try buffered_writer.flush();
+}
+
+fn fileValidate(alloc: Allocator, path: []const u8) !void {
+    std.debug.print("{s}\n", .{path});
+
+    var file = try std.fs.cwd().openFile(path, .{});
+    defer file.close();
+
+    const source = try file.readToEndAlloc(alloc, std.math.maxInt(usize));
+    defer alloc.free(source);
+
+    var parser = try Parser.init(alloc, source, false);
+    defer parser.deinit();
+
+    const result = try parser.parse();
+    try Validator.validate(alloc, result.root);
 }
 
 fn printUsage() void {
