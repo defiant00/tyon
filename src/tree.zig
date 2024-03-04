@@ -6,6 +6,7 @@ const Token = @import("lexer.zig").Token;
 const NodeType = enum {
     discard,
     file,
+    key_value,
     list,
     literal,
     map,
@@ -45,10 +46,16 @@ pub const TypedNode = struct {
     node: *Node,
 };
 
+pub const KeyValueNode = struct {
+    key: *Node,
+    value: *Node,
+};
+
 pub const Node = struct {
     as: union(NodeType) {
         discard: []const u8,
         file: NodeList,
+        key_value: KeyValueNode,
         list: NodeList,
         literal: []const u8,
         map: NodeList,
@@ -83,6 +90,19 @@ pub const Node = struct {
             .start_column = 0,
             .end_line = 0,
             .end_column = 0,
+            .next = null,
+        };
+        return new;
+    }
+
+    pub fn KeyValue(alloc: Allocator, token: Token) !*Node {
+        const new = try alloc.create(Node);
+        new.* = .{
+            .as = .{ .key_value = undefined },
+            .start_line = token.start_line,
+            .start_column = token.start_column,
+            .end_line = token.end_line,
+            .end_column = token.end_column,
             .next = null,
         };
         return new;
@@ -169,6 +189,10 @@ pub const Node = struct {
     pub fn deinit(self: *Node, alloc: Allocator) void {
         switch (self.getType()) {
             .file => self.asFile().deinit(alloc),
+            .key_value => {
+                self.asKeyValue().key.deinit(alloc);
+                self.asKeyValue().value.deinit(alloc);
+            },
             .list => self.asList().deinit(alloc),
             .map => self.asMap().deinit(alloc),
             .typed => {
@@ -190,6 +214,10 @@ pub const Node = struct {
 
     pub fn asFile(self: *Node) *NodeList {
         return &self.as.file;
+    }
+
+    pub fn asKeyValue(self: *Node) *KeyValueNode {
+        return &self.as.key_value;
     }
 
     pub fn asList(self: *Node) *NodeList {
@@ -306,6 +334,16 @@ pub const Node = struct {
                 while (current) |cur| : (current = cur.next) {
                     cur.print(indent + 1);
                 }
+            },
+            .key_value => {
+                std.debug.print("key/value [{d}, {d}]-[{d}, {d}]\n", .{
+                    self.start_line + 1,
+                    self.start_column + 1,
+                    self.end_line + 1,
+                    self.end_column + 1,
+                });
+                self.asKeyValue().key.print(indent + 1);
+                self.asKeyValue().value.print(indent + 1);
             },
             .list => {
                 std.debug.print("list [{d}, {d}]-[{d}, {d}]\n", .{
