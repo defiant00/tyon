@@ -1,4 +1,4 @@
-# TYON 1.0.0-rc.1
+# TYON 0.6.0
 
 Typed Object Notation
 
@@ -126,8 +126,7 @@ A type name is a [literal](#literal).
 ## Typed List
 
 A typed list is a [list](#list) preceded by `/` `name` or an [inline type](#inline-type).  
-The type is applied to any implicitly untyped child [lists](#list) and [maps](#map).  
-A type name of `_` indicates that the list is explicitly untyped.
+The type is applied to any untyped child [lists](#list) and [maps](#map).
 
 ```lisp
 /point = (x y z)    ; declare type 'point'
@@ -139,30 +138,26 @@ points = /point [   ; points is a list of type 'point'
 ]
 
 nested = /point [   ; nested is a list of type 'point'
-    [               ; implicitly untyped child list is of type 'point'
-        (1 2 3)     ; implicitly untyped child maps are of type 'point'
+    [               ; untyped child list is of type 'point'
+        (1 2 3)     ; untyped child maps are of type 'point'
         (4 5 6)
         (7 8 9)
     ]
-    (1 3 5)         ; implicitly untyped child map is of type 'point'
+    (1 3 5)         ; untyped child map is of type 'point'
     /(first last) [ ; type is overridden to an inline type with keys 'first' and 'last'
-        (John Doe)  ; implicitly untyped child maps use the inline parent type
+        (John Doe)  ; untyped child maps use the inline parent type
         (Mary Sue)
     ]
-    /_ (            ; explicitly untyped map overrides the type from the parent
-        first = John
-        last = Doe
-    )
 ]
 ```
 
 ## Typed Map
 
 A typed map is `/` `name` or an [inline type](#inline-type) followed by `(` values `)`  
-A type name of `_` indicates that the [map](#map) is explicitly untyped.  
 [Values](#value) are matched to type [keys](#key) in order.  
 A [literal](#literal) value of `_` indicates that the map does not have a value for the corresponding key.  
-A typed map can have at most the same number of values as the type has keys.
+A typed map can have at most the same number of values as the type has keys.  
+A typed map can also contain [key / value pairs](#key--value-pair). These are not considered when matching values to type [keys](#key).
 
 ```lisp
 /person = (first middle last age)   ; declare type 'person'
@@ -171,8 +166,16 @@ owner = /person (John D Doe 42)     ; first = John, middle = D, last = Doe, age 
 
 list = /person [
     (John D Doe 42)                 ; first = John, middle = D, last = Doe, age = 42
-    /_ (first = Mary, age = 42)     ; explicitly untyped map overrides the parent type
     (Mary _ Sue 36)                 ; first = Mary, last = Sue, age = 36
+    (first = Mary age = 42)         ; first = Mary, age = 42
+    (
+        Mary                        ; first = Mary
+        initial = D                 ; keys / values can be intermixed with values
+        _                           ; no value for 'middle'
+        Sue                         ; last = Sue
+        42                          ; age = 42
+        address = "123 address"     ; address = "123 address"
+    )
 ]
 
 inline = /(a b c) (1 2 3)           ; inline type, a = 1, b = 2, c = 3
@@ -194,7 +197,17 @@ points = /(x y) [
 
 # Changelog
 
-## [1.0.0-rc.1] 2024-02-27
+## [0.6.0] 2024-03-03
+
+### Added
+
+* Key / value pairs in typed lists and maps
+
+### Removed
+
+* Explicitly untyped lists and maps
+
+## [0.5.0] 2024-02-27
 
 ### Added
 

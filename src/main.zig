@@ -6,8 +6,8 @@ const Parser = @import("parser.zig").Parser;
 const ToJson = @import("ToJson.zig");
 const Validator = @import("validator.zig").Validator;
 
-const tyon_version = std.SemanticVersion{ .major = 0, .minor = 5, .patch = 0 };
-const spec_version = std.SemanticVersion{ .major = 1, .minor = 0, .patch = 0, .pre = "rc.1" };
+const tyon_version = std.SemanticVersion{ .major = 0, .minor = 6, .patch = 0 };
+const spec_version = std.SemanticVersion{ .major = 0, .minor = 6, .patch = 0 };
 const data_version = std.SemanticVersion{ .major = 1, .minor = 0, .patch = 0, .pre = "rc.1" };
 
 pub fn main() !void {

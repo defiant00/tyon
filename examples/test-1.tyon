@@ -38,7 +38,7 @@ nested = /person ((a = 1) (b = 2) (c = 3))
 people = /person [
 	(a b c)
 	(d e f)
-	/_ (a = 1 b = 2)
+	(a = 1 b = 2)
 ]
 
 points = /(x y z) [

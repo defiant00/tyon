@@ -1,7 +1,7 @@
 # Typed Object Notation | [Specification](SPECIFICATION.md) | [Data Formats](FORMAT.md)
 
-![CLI Version](https://img.shields.io/badge/TYON%20CLI-0.5.0-brightgreen)
-![Spec Version](https://img.shields.io/badge/Spec-1.0.0--rc.1-blue)
+![CLI Version](https://img.shields.io/badge/TYON%20CLI-0.6.0-brightgreen)
+![Spec Version](https://img.shields.io/badge/Spec-0.6.0-blue)
 ![Format Version](https://img.shields.io/badge/Formats-1.0.0--rc.1-blue)
 
 AKA, can we be simpler and more compact than JSON without sacrificing readability.
@@ -36,6 +36,9 @@ owner = /person (Mary Sue 36) ; first = Mary, last = Sue, age = 36
 ; a value of _ in a typed map means there is no corresponding value
 employee = /person (Other _ 25) ; first = Other, age = 25
 
+; a typed map can have extra key / value pairs
+"with extra" = /person (First middle = D Last 21 address = "123 address")
+
 ; lists can also be typed, with the type applying to the children
 typed-list = /person [
     (John Doe 42)
@@ -53,7 +56,7 @@ points = /(x y z) [
 people = /person [
     (John Doe 42)
     /(x y) (1 2)    ; type overridden by the inline type
-    /_ (            ; type overridden to be untyped
+    (               ; key / value pairs supplied directly
         a = 1
         b = 2
         c = 3
